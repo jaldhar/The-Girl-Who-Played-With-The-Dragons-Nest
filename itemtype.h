@@ -1,0 +1,13 @@
+#ifndef ITEMTYPE_H
+#define ITEMTYPE_H
+
+#include <cstdint>
+
+enum class ITEMTYPE : std::uint8_t { NOTHING = 0, DOOR, TRAP,
+    BAT, CUBE, DRAGON, FLOATINGEYE, HOBGOBLIN,
+    KOBOLD, LIZARDMAN, MINOTAUR, NAGA, ORC,
+    RAT, SPIDER, TROLL, WIZARD, ZOMBIE,
+    SHIELD, WEAPON, POTION, KEY
+};
+
+#endif // ITEMTYPE_H

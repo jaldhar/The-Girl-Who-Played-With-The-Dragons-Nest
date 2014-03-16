@@ -1,0 +1,11 @@
+#ifndef TERRAIN_H
+#define TERRAIN_H
+
+#include <cstdint>
+
+enum class TERRAIN : std::uint8_t { EMPTY = 0, CORRIDOR, H_DOOR_OPEN,
+    H_DOOR_CLOSED, V_DOOR_OPEN, V_DOOR_CLOSED, FLOOR, TRAP,
+    C_WALL, H_WALL, V_WALL, UL_WALL, UR_WALL, LL_WALL, LR_WALL, TT_WALL,
+    RT_WALL, BT_WALL, LT_WALL, PLAYER };
+
+#endif // TERRAIN_H

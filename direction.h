@@ -1,0 +1,9 @@
+#ifndef DIRECTION_H
+#define DIRECTION_H
+
+#include <cstdint>
+
+enum class DIRECTION : std::uint8_t { NO_DIRECTION = 0, NORTH, EAST, WEST,
+    SOUTH, NORTHWEST, NORTHEAST, SOUTHWEST, SOUTHEAST, CANCELLED };
+
+#endif // DIRECTION_H
