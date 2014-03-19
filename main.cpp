@@ -2,7 +2,7 @@
 using namespace std;
 
 const char *name = "The Girl Who Played With The Dragons Nest";
-const char *version = "1.0";
+const char *version = "1.1";
 
 int main (int, char **) {
     Game game;

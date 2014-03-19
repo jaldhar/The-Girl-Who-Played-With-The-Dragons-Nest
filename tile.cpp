@@ -4,6 +4,7 @@ struct Tile::TileImpl {
     TileImpl();
     ~TileImpl()=default;
     bool    _passable;
+    bool    _seen;
     TERRAIN _terrain;
     bool    _visible;
 };
@@ -21,6 +22,14 @@ bool Tile::passable() const {
 
 void Tile::setPassable(bool passable) {
      _impl->_passable = passable;
+}
+
+bool Tile::seen() const {
+    return _impl->_seen;
+}
+
+void Tile::setSeen(bool seen) {
+     _impl->_seen = seen;
 }
 
 TERRAIN Tile::terrain() const {
@@ -52,6 +61,7 @@ bool Tile::isBlock() {
 
 Tile::TileImpl::TileImpl() {
     _passable = false;
+    _seen = false;
     _terrain = TERRAIN::EMPTY;
     _visible = false;
 }

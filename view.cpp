@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <clocale>
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
 #include <csignal>
@@ -6,6 +8,7 @@
 #include <deque>
 #include <functional>
 #include <map>
+#include <sstream>
 using namespace std;
 
 #include <curses.h>
@@ -20,6 +23,7 @@ using namespace std;
 
 #include "door.h"
 #include "item.h"
+#include "monster.h"
 #include "terrain.h"
 #include "trap.h"
 #include "view.h"
@@ -60,6 +64,7 @@ struct View::ViewImpl {
     TILEMAP      _tilemap;
     int          _lines;
     int          _cols;
+    size_t       _messageWinWidth;
     clock_t      _lastTick;
     string       _titleText;
     deque<string> _messages;
@@ -104,7 +109,8 @@ void View::end() {
 
 STATE View::handleTopLevelInput(Game *game) {
     int c;
-    while (!_impl.oneBeatPassed()) {
+
+    while (true) {
         if ((c = getch()) != ERR) {
             auto it = _impl._commandkeys.find(c);
             if (it != _impl._commandkeys.end()) {
@@ -113,12 +119,14 @@ STATE View::handleTopLevelInput(Game *game) {
 
             return game->badInput();
         }
+        if (_impl.oneBeatPassed()) {
+            game->draw();
+        }
 
     }
-    return STATE::DRAW;
 }
 
-DIRECTION View::handleDirectionInput() {
+DIRECTION View::handleDirectionInput(Game* game) {
     int c;
 
     while (true) {
@@ -129,19 +137,41 @@ DIRECTION View::handleDirectionInput() {
             }
             return DIRECTION::NO_DIRECTION;
         }
+        if (_impl.oneBeatPassed()) {
+            game->draw();
+        }
     }
 }
 
-int View::handleNumericalInput() {
+int View::handleNumericalInput(Game* game) {
     int c;
 
     while (true) {
         if ((c = getch()) != ERR) {
             c -= '0';
-            if (c > 0 || c < 7) {
+            if (c > 0 || c <= 9) {
                 return c;
             }
             return 0;
+        }
+        if (_impl.oneBeatPassed()) {
+            game->draw();
+        }
+    }
+}
+
+bool View::handleBooleanInput(Game* game) {
+    int c;
+
+    while (true) {
+        if ((c = getch()) != ERR) {
+            if (toupper(c) == 'Y') {
+                return true;
+            }
+            return false;
+        }
+        if (_impl.oneBeatPassed()) {
+            game->draw();
         }
     }
 }
@@ -199,7 +229,7 @@ void View::init(string titleText) {
     _impl._commandkeys['O']               = &Game::batter;
     _impl._commandkeys['q']               = &Game::quaff;
     _impl._commandkeys['Q']               = &Game::quit;
-    _impl._commandkeys['u']               = &Game::unwield;
+    _impl._commandkeys['U']               = &Game::unwield;
     _impl._commandkeys['v']               = &Game::version;
     _impl._commandkeys['w']               = &Game::wield;
     _impl._commandkeys[',']               = &Game::take;
@@ -240,7 +270,7 @@ void View::init(string titleText) {
         init_pair(4, COLOR_BLACK,  COLOR_BLACK);    // background
         init_pair(5, COLOR_RED,  COLOR_BLACK);      // player and items
         init_pair(6, COLOR_MAGENTA,   COLOR_BLACK); // monsters
-        init_pair(7, COLOR_YELLOW,   COLOR_BLACK);  // doors
+        init_pair(7, COLOR_GREEN,   COLOR_BLACK);  // doors
     }
 
     _impl._tilemap[TERRAIN::EMPTY] = ' ';    //use of ACS_* requires this goes
@@ -289,18 +319,45 @@ void View::init(string titleText) {
     _impl._lastTick = clock();
 }
 
-void View::message(const char *msg) {
-    if (_impl._messages.size() == MESSAGEWINHEIGHT) {
+void View::message(string msg) {
+    istringstream words(msg);
+    ostringstream wrapped;
+    string word;
+
+    if (words >> word) {
+        wrapped << word;
+        size_t space_left = _impl._messageWinWidth - word.length();
+        while (words >> word) {
+            if (space_left < word.length() + 1) {
+                wrapped << '\n' << word;
+                space_left = _impl._messageWinWidth - word.length();
+            } else {
+                wrapped << ' ' << word;
+                space_left -= word.length() + 1;
+            }
+        }
+    }
+    string temp;
+    istringstream lines(wrapped.str());
+    while (getline(lines, temp)) {
+        _impl._messages.push_back(temp);
+    }
+    while (_impl._messages.size() >  MESSAGEWINHEIGHT) {
         _impl._messages.pop_front();
     }
-    _impl._messages.push_back(msg);
 }
 
-void View::pause() {
+void View::pause(Game* game) {
     int c;
-    do {
-        c = getch();
-    } while (c != ' ');
+
+    while (true) {
+        if ((c = getch()) == ' ') {
+            return;
+        }
+        if (_impl.oneBeatPassed()) {
+            game->draw();
+        }
+    }
 }
 
 void View::refresh() {
@@ -327,9 +384,12 @@ void View::resize(World& world) {
         delwin(_impl._message);
         _impl._message = NULL;
     }
-    _impl._message = subwin(stdscr, world.height(), _impl._cols - 4 - 4 - 2 - world.width(), 1, 21);
-    scrollok(_impl._message, TRUE);
+    // COLS - left margin - right margin - sub window borders - world width
+    _impl._messageWinWidth = _impl._cols - 4 - 4 - 3  - world.width();
+    _impl._message = subwin(stdscr, world.height(), _impl._messageWinWidth, 1, 21);
     wbkgd(_impl._message, ' ' | COLOR_PAIR(1));
+    scrollok(_impl._message, TRUE);
+    idlok(_impl._message, TRUE);
 
     if (_impl._inventory != NULL) {
         delwin(_impl._inventory);
@@ -398,6 +458,13 @@ void View::ViewImpl::drawItems(World& world, int top, int left, int height, int 
     world.foreach_item(top, left, height, width, [=](int row, int col, ITEMPTR& item) {
         chtype t;
 
+        Tile* tile = world.tileAt(row, col);
+        if (tile->visible() == false && tile->seen() == false) {
+            t = _tilemap[TERRAIN::EMPTY];
+            mvwaddch(_viewport, row - top, col - left, t);
+            return;
+        }
+
         switch(item->type()) {
             case ITEMTYPE::DOOR: {
                     auto d = dynamic_cast<Door*>(item.get());
@@ -413,7 +480,7 @@ void View::ViewImpl::drawItems(World& world, int top, int left, int height, int 
             case ITEMTYPE::TRAP: {
                     auto trap = dynamic_cast<Trap*>(item.get());
                     if (trap->sprung()) {
-                        t = _tilemap[TERRAIN::TRAP]  | COLOR_PAIR(7);
+                        t = _tilemap[TERRAIN::TRAP]  | COLOR_PAIR(5);
                     } else {
                         t = _tilemap[TERRAIN::FLOOR] | COLOR_PAIR(2);
                     }
@@ -421,9 +488,14 @@ void View::ViewImpl::drawItems(World& world, int top, int left, int height, int 
                 }
                 break;
             default: {
-                    t = _itemmap[item->type()] | COLOR_PAIR(7);
+                    t = _itemmap[item->type()] |
+                        (dynamic_cast<Monster*>(item.get()) ? COLOR_PAIR(6) : COLOR_PAIR(5));
                 }
                 break;
+        }
+
+        if (tile->visible()) {
+            t |= A_BOLD;
         }
         mvwaddch(_viewport, row - top, col - left, t);
     });
@@ -475,17 +547,20 @@ void View::ViewImpl::drawViewport(World &world) {
             chtype display;
             Tile* t = world.tileAt(mapRow, mapCol);
 
-            if (t->visible()) {
+            if (t->visible() == false && t->seen() == false) {
+                display = _tilemap[TERRAIN::EMPTY];
+                mvwaddch(_viewport, row, col, display);
+                continue;
+            } else {
                 display = _tilemap[t->terrain()];
 
                 if (t->isBlock()) {
                     display |= COLOR_PAIR(2);
                 }
-
-            } else {
-                continue;
             }
-
+            if (t->visible()) {
+                display |= A_BOLD;
+            }
             mvwaddch(_viewport, row, col, display);
         }
     }

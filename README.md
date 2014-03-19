@@ -62,40 +62,40 @@ III. Complete list of Actions
 These are the direction keys.  They are used for movement or in compound commands to specifiy the direction in which
 the action is to occur.
 
-h, left arrow  - move west one space
-j, down arrow  - move south one space
-k, up arrow    - move north one space
-l, right arrow - move east one space
-y, home        - move northwest one space
-u, page up     - move northeast one space
-b, end         - move southwest one space
-n, page down   - move southeast one space
+h, left arrow  - move west one space  
+j, down arrow  - move south one space  
+k, up arrow    - move north one space  
+l, right arrow - move east one space  
+y, home        - move northwest one space  
+u, page up     - move northeast one space  
+b, end         - move southwest one space  
+n, page down   - move southeast one space  
 
 Moving onto an item takes it.  Moving onto a monster fights it.
 
-H,J,K,L,Y,U,B,N - run.  Continue moving in the same direction as the lower-case equivalent until a wall, etc. is reached.
+H,J,K,L,Y,U,B,N - run.  Continue moving in the same direction as the lower-case equivalent until a wall, etc. is reached.  
 
-m <direction> - move in that direction but don't take what is there.  Can be used to jump over a trap without damage.
-M <direction> - run in that direction but don't take anything along the way.
-f <direction> - fight whatever is in that direction.
-F <direction> - don't stop fighting whatever is in that direction until you or it are dead.
-o <direction> - open the door in that direction.  Only works if you have a key.
-c <direction> - close the door in that direction.
-O <direction> - bash down the door in that direction.
-q             - quaff a potion if you have one.
-w <number>    - wield an item i.e. move it from inventory slot <number> into your hand ready for use.                                                         
-u <number>    - put wielded item <number> back into your inventory.
-d <number>    - drop wielded or carried item <number>.
-,             - take whatever is in the square you are standing on.  Handy if you used m previously.
-v             - display version info.
-!             - temporarily drop to a command shell.  type exit to return to the game.
-Ctrl-R        - refresh the screen if has gotten messed up.
-Q             - quit the program.
+m <direction> - move in that direction but don't take what is there.  Can be used to jump over a trap without damage.  
+M <direction> - run in that direction but don't take anything along the way.  
+f <direction> - fight whatever is in that direction.  
+F <direction> - don't stop fighting whatever is in that direction until you or it are dead.  
+o <direction> - open the door in that direction.  Only works if you have a key.  
+c <direction> - close the door in that direction.  
+O <direction> - bash down the door in that direction.  
+q             - quaff a potion if you have one.  
+w <number>    - wield an item i.e. move it from inventory slot <number> into your hand ready for use.  
+U <number>    - put wielded item <number> back into your inventory.  
+d <number>    - drop wielded or carried item <number>.  
+,             - take whatever is in the square you are standing on.  Handy if you used m previously.  
+v             - display version info.  
+!             - temporarily drop to a command shell.  type exit to return to the game.  
+Ctrl-R        - refresh the screen if has gotten messed up.  
+Q             - quit the program.  
 
 IV. Author and Copyright
 ========================
 
-Jaldhar H. Vyas <jaldhar@braincells.com>
-Copyright (C) 2014, Consolidated Braincells Inc. All rights reserved.
-This program may be distributed in source or compiled form under the terms of the BSD license.
+Jaldhar H. Vyas <jaldhar@braincells.com>  
+Copyright (C) 2014, Consolidated Braincells Inc. All rights reserved.  
+This program may be distributed in source or compiled form under the terms of the BSD license.  
 

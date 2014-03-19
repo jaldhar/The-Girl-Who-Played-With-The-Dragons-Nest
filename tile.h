@@ -9,11 +9,13 @@ public:
     Tile();
     ~Tile();
     bool    passable() const;
-    void    setPassable(bool p);
+    void    setPassable(bool passable);
+    bool    seen() const;
+    void    setSeen(bool seen);
     TERRAIN terrain() const;
     void    setTerrain(TERRAIN terrain);
     bool    visible() const;
-    void    setVisible(bool v);
+    void    setVisible(bool visible);
     bool    isBlock();
 
 private:

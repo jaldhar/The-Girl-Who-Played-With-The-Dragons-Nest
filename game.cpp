@@ -59,13 +59,13 @@ int Game::run(const char *name, const char *version) {
         case STATE::COMMAND:
             state = view.handleTopLevelInput(this);
             break;
-        case STATE::DRAW:
-            state = view.draw(world, player);
-            break;
         case STATE::FIGHTING:
             state = _impl.fight();
         case STATE::MOVING:
             state = _impl.move();
+            break;
+        case STATE::DEAD:
+            state = dead();
             break;
         case STATE::QUIT:
             running = false;
@@ -77,9 +77,6 @@ int Game::run(const char *name, const char *version) {
         }
     }
 
-    view.message("--press space to continue--");
-    view.draw(world, player);
-    view.pause();
     view.end();
 
     // Actually we won't ever get here because view.end() exit(3)s.
@@ -89,6 +86,17 @@ int Game::run(const char *name, const char *version) {
 STATE Game::badInput() {
     view.message("Huh?");
     return STATE::ERROR;
+}
+
+STATE Game::dead() {
+    view.message("--press space to continue--");
+    view.pause(this);
+    return STATE::QUIT;
+}
+
+void Game::draw() {
+    world.fov();
+    view.draw(world, player);
 }
 
 STATE Game::error() {
@@ -280,8 +288,7 @@ STATE Game::drop() {
         return STATE::ERROR;
     }
     view.message("drop what?");
-    view.draw(world, player);
-    int dropped = view.handleNumericalInput();
+    int dropped = view.handleNumericalInput(this);
     if (dropped != 0) {
         Item* temp = player.drop(dropped);
         if (temp != nullptr) {
@@ -293,8 +300,7 @@ STATE Game::drop() {
 
 STATE Game::wield() {
     view.message("wield what?");
-    view.draw(world, player);
-    int dropped = view.handleNumericalInput();
+    int dropped = view.handleNumericalInput(this);
     if (dropped > 2 && dropped < 7) {
         Item* temp = player.drop(dropped);
         if (temp != nullptr) {
@@ -304,7 +310,7 @@ STATE Game::wield() {
                     player.carry(temp);
                 }
             } else {
-                view.message("You can't wield that");
+                view.message("You can't wield that.");
                 player.carry(temp);
             }
         }
@@ -315,8 +321,7 @@ STATE Game::wield() {
 
 STATE Game::unwield() {
     view.message("unwield what?");
-    view.draw(world, player);
-    int dropped = view.handleNumericalInput();
+    int dropped = view.handleNumericalInput(this);
     if (dropped > 0 && dropped < 3) {
         Item* temp = player.drop(dropped);
         if (temp != nullptr) {
@@ -330,7 +335,8 @@ STATE Game::unwield() {
 }
 
 STATE Game::quit() {
-    return STATE::QUIT;
+    view.message("Are you sure you want to quit? (y/n)");
+    return view.handleBooleanInput(this) ? STATE::QUIT : STATE::COMMAND;
 }
 
 STATE Game::refresh() {
@@ -341,7 +347,7 @@ STATE Game::refresh() {
 
 STATE Game::resize() {
     view.resize(world);
-    view.draw(world, player);
+    draw();
     return STATE::COMMAND;
 }
 
@@ -376,7 +382,7 @@ STATE Game::version() {
     stringstream banner;
 
      banner <<  _impl._name << ' ' << _impl._version;
-     view.message(banner.str().c_str());
+     view.message(banner.str());
 
      return STATE::COMMAND;
 }
@@ -404,9 +410,9 @@ STATE Game::GameImpl::fightHere(int row, int col, Monster*& monster) {
     });
 
     if (monster->attack() <= (player.defend() + defenseBonus)) {
-        output << "The " << monster->name() << " misses you.  ";
+        output << "The " << monster->name() << " misses you. ";
     } else {
-        output << "The " << monster->name() << " hits you.  ";
+        output << "The " << monster->name() << " hits you. ";
         player.setHealth(-1);
         if (monster->type() == ITEMTYPE::WIZARD) { // Teleport
             player.setKeepFighting(false);
@@ -418,9 +424,9 @@ STATE Game::GameImpl::fightHere(int row, int col, Monster*& monster) {
     }
 
     if ((player.attack() + offenseBonus) <= monster->defend()) {
-        output << "You miss the " << monster->name() << ".  ";
+        output << "You miss the " << monster->name() << ". ";
     } else {
-        output << "You hit the " << monster->name() << ".  ";
+        output << "You hit the " << monster->name() << ". ";
         monster->setHealth(-1);
     }
 
@@ -429,10 +435,10 @@ STATE Game::GameImpl::fightHere(int row, int col, Monster*& monster) {
     if (monster->health() < 1 ) {
         world.setPlayerRow(row);
         world.setPlayerCol(col);
-        output << "You kill the "  << monster->name() << ".  ";
+        output << "You kill the "  << monster->name() << ". ";
         if (monster->type() == ITEMTYPE::DRAGON) {
             output << "You have won!";
-            result = STATE::QUIT;
+            result = STATE::DEAD;
         } else {
             result = STATE::COMMAND;
         }
@@ -446,12 +452,16 @@ STATE Game::GameImpl::fightHere(int row, int col, Monster*& monster) {
     }
 
     if ( player.health() < 1 ) {
-        output << "You are dead.";
+        if (monster->type() == ITEMTYPE::TROLL) {
+            output << "YHBT. YHL. HAND!";
+        } else {
+            output << "You are dead.";
+        }
         player.setKeepFighting(false);
-        result = STATE::QUIT;
+        result = STATE::DEAD;
     }
 
-    view.message(output.str().c_str());
+    view.message(output.str());
 
     return result;
 }
@@ -466,7 +476,7 @@ STATE Game::GameImpl::batter() {
         player.setHealth(-2);
         if (player.health() < 1) {
             view.message("You are dead.");
-            return STATE::QUIT;
+            return STATE::DEAD;
         }
         return STATE::COMMAND;
     }
@@ -548,11 +558,11 @@ STATE Game::GameImpl::move() {
 
         } else if (Trap* trap = dynamic_cast<Trap*>(item)) {
             if (player.pickup()) {
-                view.message("You have stepped in a trap");
+                view.message("You have stepped in a trap.");
                 player.setHealth(-2);
                 if (player.health() < 1) {
                     view.message("You are dead.");
-                    return STATE::QUIT;
+                    return STATE::DEAD;
                 }
                 trap->setSprung(true);
             }
@@ -607,10 +617,10 @@ STATE Game::GameImpl::directed(string command, function<STATE(GameImpl&)> func) 
 
     stringstream prompt;
     prompt << command << " in which direction?";
-    view.message(prompt.str().c_str());
-    view.draw(world, player);
+    view.message(prompt.str());
+    Game game;
 
-    switch(view.handleDirectionInput()) {
+    switch(view.handleDirectionInput(&game)) {
         case DIRECTION::NORTH:
             player.setFacingY(-1);
             player.setFacingX(0);

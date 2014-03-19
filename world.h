@@ -24,6 +24,8 @@ public:
     Item*    itemAt(int row, int col) const;
     void     insertItem(int row, int col, Item* item);
     bool     removeItem(int row, int col, bool destroy = false);
+    void     setAllVisible(bool visibility);
+    void     fov();
     Tile*    tileAt(int row, int col) const;
 private:
     struct WorldImpl;

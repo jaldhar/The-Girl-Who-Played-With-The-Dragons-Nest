@@ -9,6 +9,8 @@ public:
     ~Game()=default;
     int run(const char *name, const char *version);
     STATE badInput();
+    STATE dead();
+    void  draw();
     STATE error();
     STATE fight();
     STATE fightToDeath();

@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
+#include <cmath>
 #include <cstdlib>
 #include <map>
 #include <vector>
@@ -45,7 +46,6 @@ void World::create() {
     for (auto & row : _impl._map) {
         for (auto & col : row) {
             col = TILEPTR(new Tile());
-            col->setVisible(true);
         }
     }
 
@@ -134,6 +134,31 @@ bool World::removeItem(int row, int col, bool destroy) {
     _impl._items.erase(item);
 
     return true;
+}
+
+void World::setAllVisible(bool visibility) {
+    for (auto & row : _impl._map) {
+        for (auto & col : row) {
+            col->setVisible(visibility);
+        }
+    }
+}
+
+void World::fov() {
+    setAllVisible(false);
+
+    for (int i = _impl._playerRow - 1; i < _impl._playerRow + 2; i++) {
+        if (i < 0 || i >= MAP_HEIGHT) {
+            continue;
+        }
+        for (int j = _impl._playerCol - 1; j < _impl._playerCol + 2; j++) {
+            if (j < 0 || j >= MAP_WIDTH) {
+                continue;
+            }
+            _impl._map[i][j]->setVisible(true);
+            _impl._map[i][j]->setSeen(true);
+        }
+    }
 }
 
 Tile* World::tileAt(int row, int col) const {
@@ -289,6 +314,8 @@ void World::WorldImpl::addItem(int row, int col) {
 }
 
 void World::WorldImpl::addDoors() {
+    World world;
+
     for (int row = 1; row < MAP_HEIGHT - 1; row++) {
         for (int col = 1; col < MAP_WIDTH - 1; col++) {
             if (_map[row][col]->terrain() != TERRAIN::FLOOR) {
@@ -315,6 +342,20 @@ void World::WorldImpl::addDoors() {
                 // vertically, no door.
                 if (adjacent != 2 && adjacent != 6) {
                     continue;
+                }
+
+                // Now check if any doors already exist next to this door
+                // if so, no door.
+                if (adjacent == 2) {
+                    if (dynamic_cast<Door*>(world.itemAt(row, col - 1)) || dynamic_cast<Door*>(world.itemAt(row, col + 1))) {
+                        continue;
+                     }
+                }
+
+                if (adjacent == 6) {
+                    if (dynamic_cast<Door*>(world.itemAt(row - 1, col)) || dynamic_cast<Door*>(world.itemAt(row + 1, col))) {
+                        continue;
+                     }
                 }
 
                 Door* door = new Door();

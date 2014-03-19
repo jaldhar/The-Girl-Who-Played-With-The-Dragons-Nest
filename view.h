@@ -17,11 +17,12 @@ public:
     STATE draw(World& world, Player& player);
     void  end();
     STATE handleTopLevelInput(Game* game);
-    DIRECTION handleDirectionInput();
-    int   handleNumericalInput();
+    DIRECTION handleDirectionInput(Game* game);
+    int   handleNumericalInput(Game* game);
+    bool  handleBooleanInput(Game* game);
     void  init(std::string titleText);
-    void  message(const char *msg);
-    void  pause();
+    void  message(std::string msg);
+    void  pause(Game* game);
     void  refresh();
     void  resize(World& world);
     void  shell();
