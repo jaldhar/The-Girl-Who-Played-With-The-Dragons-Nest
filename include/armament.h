@@ -16,7 +16,7 @@ public:
 
 private:
     struct ArmamentImpl;
-    std::unique_ptr<ArmamentImpl> _impl;
+    std::unique_ptr<ArmamentImpl> impl_;
 };
 
 #endif // ARMAMENT_H

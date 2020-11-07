@@ -13,7 +13,7 @@ public:
     void setSprung(bool spring);
 private:
      struct TrapImpl;
-     std::unique_ptr<TrapImpl> _impl;
+     std::unique_ptr<TrapImpl> impl_;
 };
 
 #endif // TRAP_H

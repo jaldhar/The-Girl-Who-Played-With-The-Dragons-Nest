@@ -15,7 +15,7 @@ public:
 
 private:
      struct DoorImpl;
-     std::unique_ptr<DoorImpl> _impl;
+     std::unique_ptr<DoorImpl> impl_;
 };
 
 #endif // DOOR_H

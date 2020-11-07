@@ -20,7 +20,7 @@ public:
 
 private:
     struct CombatImpl;
-    std::unique_ptr<CombatImpl> _impl;
+    std::unique_ptr<CombatImpl> impl_;
 };
 
 #endif // COMBAT_H

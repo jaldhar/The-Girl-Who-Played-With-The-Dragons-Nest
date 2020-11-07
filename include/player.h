@@ -26,7 +26,7 @@ public:
     void                     foreach_wielded(std::function<void(std::unique_ptr<Item>&)> callback);
 private:
     struct PlayerImpl;
-    static PlayerImpl _impl;
+    static PlayerImpl impl_;
 };
 
 #endif // PLAYER_H

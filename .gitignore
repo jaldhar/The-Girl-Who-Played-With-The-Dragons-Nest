@@ -1,5 +1,9 @@
-Makefile
-tgwpwtdn
-*.o
-tgwpwtdn.pro.user
-
+.vscode/
+debug/*.d
+debug/*.o
+debug/tgwpwtdn
+debug/valgrind.log
+release/*.d
+release/*.o
+release/tgwpwtdn
+release/valgrind.log

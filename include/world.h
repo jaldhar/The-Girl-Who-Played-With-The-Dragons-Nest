@@ -29,7 +29,7 @@ public:
     Tile*    tileAt(int row, int col) const;
 private:
     struct WorldImpl;
-    static WorldImpl _impl;
+    static WorldImpl impl_;
 };
 
 #endif // WORLD_H

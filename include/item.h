@@ -20,7 +20,7 @@ public:
 
  private:
     struct ItemImpl;
-    std::unique_ptr<ItemImpl> _impl;
+    std::unique_ptr<ItemImpl> impl_;
 };
 
 typedef std::unique_ptr<Item> ITEMPTR;

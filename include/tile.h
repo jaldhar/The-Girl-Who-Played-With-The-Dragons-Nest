@@ -20,6 +20,6 @@ public:
 
 private:
     struct TileImpl;
-    std::unique_ptr<TileImpl> _impl;
+    std::unique_ptr<TileImpl> impl_;
 };
 #endif // TILE_H

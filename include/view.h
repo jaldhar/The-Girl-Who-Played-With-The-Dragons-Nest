@@ -28,7 +28,7 @@ public:
     void  shell();
 private:
     struct ViewImpl;
-    static ViewImpl _impl;
+    static ViewImpl impl_;
 };
 
 #endif // VIEW_H

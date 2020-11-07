@@ -2,7 +2,6 @@
 #include <ctime>
 #include <sstream>
 #include <string>
-using namespace std;
 
 #include "armament.h"
 #include "direction.h"
@@ -18,38 +17,39 @@ using namespace std;
 #include "world.h"
 
 struct Game::GameImpl {
-string _name;
-string _version;
+    GameImpl();
+    std::string name_;
+    std::string version_;
 
-bool canMove(int row, int col);
-STATE fight();
-STATE fightHere(int row, int col, Monster*& monster);
-STATE batter();
-STATE close();
-STATE open();
-STATE move();
-STATE take();
-STATE takeHere(int row, int col, Item*& item);
-STATE directed(string command, function<STATE(GameImpl&)> func);
+    bool canMove(int row, int col);
+    STATE fight();
+    STATE fightHere(int row, int col, Monster*& monster);
+    STATE batter();
+    STATE close();
+    STATE open();
+    STATE move();
+    STATE take();
+    STATE takeHere(int row, int col, Item*& item);
+    STATE directed(std::string command, std::function<STATE(GameImpl&)> func);
 
-} Game::_impl;
+} Game::impl_;
 
 static Player player;
 static View view;
 static World world;
 
 int Game::run(const char *name, const char *version) {
-    srand(time(NULL));
+    std::srand(std::time(NULL));
 
-    _impl._name = name;
-    _impl._version = version;
+    impl_.name_ = name;
+    impl_.version_ = version;
 
     STATE state = STATE::COMMAND;
     bool running = true;
 
     world.create();
 
-    view.init(_impl._name);
+    view.init(impl_.name_);
     resize();
 
     Game::version();
@@ -60,9 +60,10 @@ int Game::run(const char *name, const char *version) {
             state = view.handleTopLevelInput(this);
             break;
         case STATE::FIGHTING:
-            state = _impl.fight();
+            state = impl_.fight();
+            break;
         case STATE::MOVING:
-            state = _impl.move();
+            state = impl_.move();
             break;
         case STATE::DEAD:
             state = dead();
@@ -107,12 +108,12 @@ STATE Game::error() {
 
 STATE Game::fight() {
     player.setKeepFighting(false);
-    return _impl.directed("fight", &GameImpl::fight);
+    return impl_.directed("fight", &GameImpl::fight);
 }
 
 STATE Game::fightToDeath() {
     player.setKeepFighting(true);
-    return _impl.directed("fight to the death", &GameImpl::fight);
+    return impl_.directed("fight to the death", &GameImpl::fight);
 }
 
 STATE Game::move_left() {
@@ -245,17 +246,17 @@ STATE Game::run_downright() {
 
 STATE Game::moveOver() {
     player.setPickup(false);
-    return _impl.directed("move over", &GameImpl::move);
+    return impl_.directed("move over", &GameImpl::move);
 }
 
 STATE Game::runOver() {
     player.setKeepMoving(true);
     player.setPickup(false);
-    return _impl.directed("run over", &GameImpl::move);
+    return impl_.directed("run over", &GameImpl::move);
 }
 
 STATE Game::batter() {
-    return _impl.directed("batter down door", &GameImpl::batter);
+    return impl_.directed("batter down door", &GameImpl::batter);
 }
 
 STATE Game::open() {
@@ -268,18 +269,18 @@ STATE Game::open() {
     });
 
     if (hasKey) {
-        return _impl.directed("open door", &GameImpl::open);
+        return impl_.directed("open door", &GameImpl::open);
     }
     view.message("You don't have the key.");
     return STATE::ERROR;
 }
 
 STATE Game::close() {
-    return _impl.directed("close door", &GameImpl::close);
+    return impl_.directed("close door", &GameImpl::close);
 }
 
 STATE Game::take() {
-    return _impl.take();
+    return impl_.take();
 }
 
 STATE Game::drop() {
@@ -379,12 +380,15 @@ STATE Game::quaff() {
 }
 
 STATE Game::version() {
-    stringstream banner;
+    std::stringstream banner;
 
-     banner <<  _impl._name << ' ' << _impl._version;
+     banner <<  impl_.name_ << ' ' << impl_.version_;
      view.message(banner.str());
 
      return STATE::COMMAND;
+}
+
+Game::GameImpl::GameImpl() : name_{""}, version_{""} {
 }
 
 STATE Game::GameImpl::fight() {
@@ -398,7 +402,7 @@ STATE Game::GameImpl::fight() {
 }
 
 STATE Game::GameImpl::fightHere(int row, int col, Monster*& monster) {
-    stringstream output;
+    std::stringstream output;
 
     int offenseBonus = 0, defenseBonus = 0;
     player.foreach_wielded([&](ITEMPTR& item) {
@@ -613,9 +617,10 @@ STATE Game::GameImpl::takeHere(int row, int col, Item*& item) {
     return STATE::COMMAND;
 }
 
-STATE Game::GameImpl::directed(string command, function<STATE(GameImpl&)> func) {
+STATE Game::GameImpl::directed(std::string command,
+std::function<STATE(GameImpl&)> func) {
 
-    stringstream prompt;
+    std::stringstream prompt;
     prompt << command << " in which direction?";
     view.message(prompt.str());
     Game game;
@@ -624,42 +629,42 @@ STATE Game::GameImpl::directed(string command, function<STATE(GameImpl&)> func) 
         case DIRECTION::NORTH:
             player.setFacingY(-1);
             player.setFacingX(0);
-            return func(_impl);
+            return func(impl_);
             break;
         case DIRECTION::EAST:
             player.setFacingY(0);
             player.setFacingX(1);
-            return func(_impl);
+            return func(impl_);
             break;
         case DIRECTION::WEST:
             player.setFacingY(0);
             player.setFacingX(-1);
-            return func(_impl);
+            return func(impl_);
             break;
         case DIRECTION::SOUTH:
             player.setFacingY(1);
             player.setFacingX(0);
-            return func(_impl);
+            return func(impl_);
             break;
         case DIRECTION::NORTHWEST:
             player.setFacingY(-1);
             player.setFacingX(-1);
-            return func(_impl);
+            return func(impl_);
             break;
         case DIRECTION::NORTHEAST:
             player.setFacingY(-1);
             player.setFacingX(1);
-            return func(_impl);
+            return func(impl_);
             break;
         case DIRECTION::SOUTHWEST:
             player.setFacingY(1);
             player.setFacingX(-1);
-            return func(_impl);
+            return func(impl_);
             break;
         case DIRECTION::SOUTHEAST:
             player.setFacingY(1);
             player.setFacingX(1);
-            return func(_impl);
+            return func(impl_);
             break;
         case DIRECTION::CANCELLED:
             view.message("");

@@ -6,8 +6,6 @@
 #include <map>
 #include <vector>
 #include <utility>
-using namespace std;
-
 #include "door.h"
 #include "key.h"
 #include "monster.h"
@@ -20,10 +18,10 @@ using namespace std;
 static const int MAP_HEIGHT       = 15;
 static const int MAP_WIDTH        = 15;
 
-typedef unique_ptr<Tile>    TILEPTR;
+typedef std::unique_ptr<Tile>    TILEPTR;
 
 struct World::WorldImpl {
-    WorldImpl()=default;
+    WorldImpl();
     ~WorldImpl()=default;
     void generateMaze();
     void makeFloor(int row, int col);
@@ -33,36 +31,36 @@ struct World::WorldImpl {
     void addWalls();
     void specializeWalls();
 
-    array<array<TILEPTR, MAP_WIDTH>,MAP_HEIGHT> _map;
-    int                                         _playerRow;
-    int                                         _playerCol;
-    int                                         _startCol;
-    int                                         _endCol;
-    map<pair<int, int>, ITEMPTR>                _items;
-} World::_impl;
+    std::array<std::array<TILEPTR, MAP_WIDTH>,MAP_HEIGHT> map_;
+    int                                         playerRow_;
+    int                                         playerCol_;
+    int                                         startCol_;
+    int                                         endCol_;
+    std::map<std::pair<int, int>, ITEMPTR>      items_;
+} World::impl_;
 
 void World::create() {
     // Begin by filling in the entire grid.
-    for (auto & row : _impl._map) {
+    for (auto & row : impl_.map_) {
         for (auto & col : row) {
             col = TILEPTR(new Tile());
         }
     }
 
     // Build the maze (including items, monsters and traps,)
-    _impl.generateMaze();
+    impl_.generateMaze();
 
     // Add exits and set the player position.
-    _impl.addExits();
+    impl_.addExits();
 
     // Add basic walls
-    _impl.addWalls();
+    impl_.addWalls();
 
     // Doors have to be placed separately after walls.
-    _impl.addDoors();
+    impl_.addDoors();
 
     // Make walls fancier.
-    _impl.specializeWalls();
+    impl_.specializeWalls();
 }
 
 int World::height() const {
@@ -74,28 +72,28 @@ int World::width() const {
 }
 
 int World::playerRow() const {
-    return _impl._playerRow;
+    return impl_.playerRow_;
 }
 
 void World::setPlayerRow(int row) {
-    _impl._playerRow = row;
+    impl_.playerRow_ = row;
 }
 
 int World::playerCol() const {
-    return _impl._playerCol;
+    return impl_.playerCol_;
 }
 
 void World::setPlayerCol(int col) {
-    _impl._playerCol = col;
+    impl_.playerCol_ = col;
 }
 
 int World::startCol() const {
-    return _impl._startCol;
+    return impl_.startCol_;
 }
 
 void  World::foreach_item(int top, int left, int height, int width,
-    function<void(int, int, ITEMPTR&)> callback) {
-    for(auto & i : _impl._items) {
+    std::function<void(int, int, ITEMPTR&)> callback) {
+    for(auto & i : impl_.items_) {
         int row = i.first.first;
         int col = i.first.second;
         if (row < top || row > top + height - 1 || col < left ||
@@ -107,8 +105,8 @@ void  World::foreach_item(int top, int left, int height, int width,
 }
 
 Item* World::itemAt(int row, int col) const {
-    auto item = _impl._items.find(make_pair(row, col));
-    if (item == _impl._items.end()) {
+    auto item = impl_.items_.find(std::make_pair(row, col));
+    if (item == impl_.items_.end()) {
         return nullptr;
     }
 
@@ -116,13 +114,13 @@ Item* World::itemAt(int row, int col) const {
 }
 
 void World::insertItem(int row, int col, Item* item) {
-    _impl._items[make_pair(row, col)] = ITEMPTR(item);
+    impl_.items_[std::make_pair(row, col)] = ITEMPTR(item);
 }
 
 bool World::removeItem(int row, int col, bool destroy) {
-    auto item = _impl._items.find(make_pair(row, col));
+    auto item = impl_.items_.find(std::make_pair(row, col));
 
-    if (item == _impl._items.end()) {
+    if (item == impl_.items_.end()) {
         return false;
     }
 
@@ -131,13 +129,13 @@ bool World::removeItem(int row, int col, bool destroy) {
     } else {
         item->second.release();
     }
-    _impl._items.erase(item);
+    impl_.items_.erase(item);
 
     return true;
 }
 
 void World::setAllVisible(bool visibility) {
-    for (auto & row : _impl._map) {
+    for (auto & row : impl_.map_) {
         for (auto & col : row) {
             col->setVisible(visibility);
         }
@@ -147,35 +145,39 @@ void World::setAllVisible(bool visibility) {
 void World::fov() {
     setAllVisible(false);
 
-    for (int i = _impl._playerRow - 1; i < _impl._playerRow + 2; i++) {
+    for (int i = impl_.playerRow_ - 1; i < impl_.playerRow_ + 2; i++) {
         if (i < 0 || i >= MAP_HEIGHT) {
             continue;
         }
-        for (int j = _impl._playerCol - 1; j < _impl._playerCol + 2; j++) {
+        for (int j = impl_.playerCol_ - 1; j < impl_.playerCol_ + 2; j++) {
             if (j < 0 || j >= MAP_WIDTH) {
                 continue;
             }
-            _impl._map[i][j]->setVisible(true);
-            _impl._map[i][j]->setSeen(true);
+            impl_.map_[i][j]->setVisible(true);
+            impl_.map_[i][j]->setSeen(true);
         }
     }
 }
 
 Tile* World::tileAt(int row, int col) const {
-    return _impl._map[row][col].get();
+    return impl_.map_[row][col].get();
 }
 
 // private methods
+
+World::WorldImpl::WorldImpl() : map_{}, playerRow_{0}, playerCol_{0},
+startCol_{0}, endCol_{0}, items_{} {
+}
 
 void World::WorldImpl::generateMaze() {
     // Build maze (Algorithm based on VB/JS examples at
     // http://www.roguebasin.com/index.php?title=Simple_maze)
     int done = 0;
-    vector<pair<int, int>> dirs;
-    dirs.push_back(make_pair(-1,0));
-    dirs.push_back(make_pair(1,0));
-    dirs.push_back(make_pair(0,-1));
-    dirs.push_back(make_pair(0,1));
+    std::vector<std::pair<int, int>> dirs;
+    dirs.push_back(std::make_pair(-1,0));
+    dirs.push_back(std::make_pair(1,0));
+    dirs.push_back(std::make_pair(0,-1));
+    dirs.push_back(std::make_pair(0,1));
 
     do {
         // this code is used to make sure the numbers are odd
@@ -187,15 +189,15 @@ void World::WorldImpl::generateMaze() {
             makeFloor(row, col);
         }
 
-        if (_impl._map[row][col]->terrain() == TERRAIN::FLOOR) {
+        if (impl_.map_[row][col]->terrain() == TERRAIN::FLOOR) {
             //Randomize Directions
-            random_shuffle(dirs.begin(), dirs.end());
+            std::random_shuffle(dirs.begin(), dirs.end());
 
             bool blocked = true;
 
             do {
                 if (rand() % 5 == 0) {
-                    random_shuffle(dirs.begin(), dirs.end());
+                    std::random_shuffle(dirs.begin(), dirs.end());
                 }
 
                 blocked = true;
@@ -205,7 +207,7 @@ void World::WorldImpl::generateMaze() {
                     int c = col + dirs[i].second * 2;
                     //Check to see if the tile can be used
                     if (r >= 1 && r < MAP_HEIGHT - 1 && c >= 1 && c < MAP_WIDTH - 1) {
-                        if (_impl._map[r][c]->terrain() != TERRAIN::FLOOR) {
+                        if (impl_.map_[r][c]->terrain() != TERRAIN::FLOOR) {
                             //create destination location
                             makeFloor(r, c);
                             //create intermediate location
@@ -226,20 +228,20 @@ void World::WorldImpl::generateMaze() {
 
 
 void World::WorldImpl::makeFloor(int row, int col) {
-    _impl._map[row][col]->setTerrain(TERRAIN::FLOOR);
-    _impl._map[row][col]->setPassable(true);
+    impl_.map_[row][col]->setTerrain(TERRAIN::FLOOR);
+    impl_.map_[row][col]->setPassable(true);
     addItem(row, col);
 }
 
 void World::WorldImpl::addItem(int row, int col) {
 
     // Start space always empty
-    if (row == 0 && col == _startCol) {
+    if (row == 0 && col == startCol_) {
         return;
     // End space always dragon
-    } else if (row == MAP_HEIGHT - 1 && col == _endCol) {
+    } else if (row == MAP_HEIGHT - 1 && col == endCol_) {
         Monster* dragon = new Monster("the", "dragon", ITEMTYPE::DRAGON, 1, 6, 6);
-        _items[make_pair(row, col)] = ITEMPTR(dragon);
+        items_[std::make_pair(row, col)] = ITEMPTR(dragon);
     } else {
         int r = rand() % 100;
 
@@ -286,29 +288,33 @@ void World::WorldImpl::addItem(int row, int col) {
                     monster = new Monster("a", "floating eye", ITEMTYPE::FLOATINGEYE, 1, 5, 5);
                 }
             }
-            _items[make_pair(row, col)] = ITEMPTR(monster);
+            items_[std::make_pair(row, col)] = ITEMPTR(monster);
 
         // item
         } else if (r < 90) {
             int r = rand() % 100;
             if (r < 40) {
-                _items[make_pair(row, col)] = ITEMPTR(new Potion());
+                items_[std::make_pair(row, col)] = ITEMPTR(new Potion());
             } else if (r < 60) {
-                _items[make_pair(row, col)] = ITEMPTR(new Key());
+                items_[std::make_pair(row, col)] = ITEMPTR(new Key());
             } else if (r < 70) {
-                _items[make_pair(row, col)] = ITEMPTR(new Shield("a", "buckler", ITEMTYPE::SHIELD, 0, 1));
+                items_[std::make_pair(row, col)] =
+                    ITEMPTR(new Shield("a", "buckler", ITEMTYPE::SHIELD, 0, 1));
             } else if (r < 80) {
-                _items[make_pair(row, col)] = ITEMPTR(new Shield("a", "shield", ITEMTYPE::SHIELD, 0, 2));
+                items_[std::make_pair(row, col)] =
+                    ITEMPTR(new Shield("a", "shield", ITEMTYPE::SHIELD, 0, 2));
             } else if (r < 90) {
-                _items[make_pair(row, col)] = ITEMPTR(new Weapon("a", "sword", ITEMTYPE::WEAPON, 0, 1));
+                items_[std::make_pair(row, col)] =
+                ITEMPTR(new Weapon("a", "sword", ITEMTYPE::WEAPON, 0, 1));
             } else {
-                _items[make_pair(row, col)] = ITEMPTR(new Weapon("a", "battleaxe", ITEMTYPE::WEAPON, 0, 2));
+                items_[std::make_pair(row, col)] =
+                  ITEMPTR(new Weapon("a", "battleaxe", ITEMTYPE::WEAPON, 0, 2));
             }
             return;
 
         // trap
         } else {
-            _items[make_pair(row, col)] = ITEMPTR(new Trap());
+            items_[std::make_pair(row, col)] = ITEMPTR(new Trap());
         }
     }
 }
@@ -318,23 +324,23 @@ void World::WorldImpl::addDoors() {
 
     for (int row = 1; row < MAP_HEIGHT - 1; row++) {
         for (int col = 1; col < MAP_WIDTH - 1; col++) {
-            if (_map[row][col]->terrain() != TERRAIN::FLOOR) {
+            if (map_[row][col]->terrain() != TERRAIN::FLOOR) {
                 continue;
             }
             int r = rand() % 100;
             if (r < 30) {
                 // Check how many walls are adjacent to the door
                 int adjacent = 0;
-                if (_map[row - 1][col]->terrain() == TERRAIN::C_WALL) {
+                if (map_[row - 1][col]->terrain() == TERRAIN::C_WALL) {
                     adjacent++;
                 }
-                if (_map[row + 1][col]->terrain() == TERRAIN::C_WALL) {
+                if (map_[row + 1][col]->terrain() == TERRAIN::C_WALL) {
                     adjacent++;
                 }
-                if (_map[row][col - 1]->terrain() == TERRAIN::C_WALL) {
+                if (map_[row][col - 1]->terrain() == TERRAIN::C_WALL) {
                     adjacent += 3;
                 }
-                if (_map[row][col + 1]->terrain() == TERRAIN::C_WALL) {
+                if (map_[row][col + 1]->terrain() == TERRAIN::C_WALL) {
                     adjacent += 3;
                 }
 
@@ -362,33 +368,33 @@ void World::WorldImpl::addDoors() {
                 if (adjacent == 6) {
                     door->setHorizontal(true);
                 }
-                _items[make_pair(row, col)] = ITEMPTR(door);
+                items_[std::make_pair(row, col)] = ITEMPTR(door);
             }
         }
     }
 }
 
 void World::WorldImpl::addExits() {
-    vector<int> freeCols;
+    std::vector<int> freeCols;
     for (int i = 1; i < MAP_WIDTH - 1; i++) {
-        if (_impl._map[1][i]->terrain() == TERRAIN::FLOOR) {
+        if (impl_.map_[1][i]->terrain() == TERRAIN::FLOOR) {
             freeCols.push_back(i);
         }
     }
-    _startCol = freeCols[rand() % freeCols.size()];
-    makeFloor(0, _startCol);
+    startCol_ = freeCols[rand() % freeCols.size()];
+    makeFloor(0, startCol_);
 
-    _playerRow = 0;
-    _playerCol = _startCol;
+    playerRow_ = 0;
+    playerCol_ = startCol_;
 
     freeCols.clear();
     for (int i = 1; i < MAP_WIDTH - 1; i++) {
-        if (_impl._map[MAP_HEIGHT - 2][i]->terrain() == TERRAIN::FLOOR) {
+        if (impl_.map_[MAP_HEIGHT - 2][i]->terrain() == TERRAIN::FLOOR) {
             freeCols.push_back(i);
         }
     }
-    _endCol = freeCols[rand() % freeCols.size()];
-    makeFloor(MAP_HEIGHT - 1, _endCol);
+    endCol_ = freeCols[rand() % freeCols.size()];
+    makeFloor(MAP_HEIGHT - 1, endCol_);
 }
 
 void World::WorldImpl::addWalls() {
@@ -396,7 +402,7 @@ void World::WorldImpl::addWalls() {
     for (int row = 0; row < MAP_HEIGHT; row++) {
         for (int col = 0; col < MAP_WIDTH; col++) {
 
-            auto & t = _map[row][col];
+            auto & t = map_[row][col];
 
             if (t->terrain() != TERRAIN::EMPTY) {
                 continue;
@@ -418,7 +424,7 @@ void World::WorldImpl::addWalls() {
                         continue;
                     }
 
-                    TERRAIN c = _map[x][y]->terrain();
+                    TERRAIN c = map_[x][y]->terrain();
                     if (c == TERRAIN::FLOOR) {
                         t->setTerrain(TERRAIN::C_WALL);
                         t->setPassable(false);
@@ -435,7 +441,7 @@ void World::WorldImpl::addWalls() {
 void World::WorldImpl::specializeWalls() {
 
     // Second pass makes specific wall types as needed.
-    map<string, TERRAIN> walls = {
+    std::map<std::string, TERRAIN> walls = {
         {"01011010", TERRAIN::C_WALL},
         {"01011000", TERRAIN::BT_WALL},
         {"01010010", TERRAIN::RT_WALL},
@@ -457,14 +463,14 @@ void World::WorldImpl::specializeWalls() {
     for (int row = 0; row < MAP_HEIGHT; row++) {
         for (int col = 0; col < MAP_WIDTH; col++) {
 
-            auto & t = _map[row][col];
+            auto & t = map_[row][col];
 
             if (t->terrain() != TERRAIN::C_WALL) {
                 continue;
             }
 
             int count = 7;
-            bitset<8> edgeset; // represent the edges as a binary number
+            std::bitset<8> edgeset; // represent the edges as a binary number
             for (int y = row - 1; y < row + 2; y++) {
 
                 if (y < 0 || y > MAP_HEIGHT - 1) {
@@ -482,12 +488,12 @@ void World::WorldImpl::specializeWalls() {
                         continue;
                     }
 
-                    if (_map[y][x]->isBlock()) {
+                    if (map_[y][x]->isBlock()) {
                         edgeset.set(count);
                     }
 
-                    auto item = _items.find(make_pair(y, x));
-                    if (item != _items.end() &&
+                    auto item = items_.find(std::make_pair(y, x));
+                    if (item != items_.end() &&
                     dynamic_cast<Door*>(item->second.get())) {
                         edgeset.set(count);
                     }
@@ -497,7 +503,7 @@ void World::WorldImpl::specializeWalls() {
             }
 
             for (auto& wall: walls) {
-                bitset<8> mask(wall.first);
+                std::bitset<8> mask(wall.first);
                 if ((edgeset & mask) == mask) {
                     t->setTerrain(wall.second);
                 }

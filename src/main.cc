@@ -1,8 +1,7 @@
 #include "game.h"
-using namespace std;
 
 const char *name = "The Girl Who Played With The Dragons Nest";
-const char *version = "1.1";
+const char *version = "1.2";
 
 int main (int, char **) {
     Game game;

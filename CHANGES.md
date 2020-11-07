@@ -1,3 +1,7 @@
+1.2 Sat Nov 7 01:08:06 2020 -0500
+
+* BUGFIX: stop screen flicker on the console (Closes issue #1)
+
 1.1 Fri Mar 21 15:03:27 2014 -0400
 
 * BUGFIX: Stop multiple doors from appearing next to each other.

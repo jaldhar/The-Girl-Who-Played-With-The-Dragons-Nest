@@ -1,6 +1,6 @@
-By Jaldhar H. Vyas <jaldhar@braincells.com>  
-Copyright (c) 2014, Consolidated Braincells Inc.  
-All rights reserved.  
+By Jaldhar H. Vyas <jaldhar@braincells.com>
+Copyright (c) 2020, Consolidated Braincells Inc.
+All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 

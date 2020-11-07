@@ -47,7 +47,7 @@ public:
     STATE version();
 private:
     struct GameImpl;
-    static GameImpl _impl;
+    static GameImpl impl_;
 };
 
 #endif // GAME_H

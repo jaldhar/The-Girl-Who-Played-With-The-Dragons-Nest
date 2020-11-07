@@ -4,12 +4,12 @@ struct Door::DoorImpl {
     DoorImpl();
     ~DoorImpl()=default;
 
-    bool    _horizontal;
-    bool    _open;
+    bool    horizontal_;
+    bool    open_;
 };
 
 Door::Door() : Item("a", "door", ITEMTYPE::DOOR),
-    _impl { new Door::DoorImpl() } {
+    impl_ { new Door::DoorImpl() } {
 }
 
 Door::~Door() {
@@ -17,22 +17,20 @@ Door::~Door() {
 }
 
 bool Door::horizontal() const {
-    return _impl->_horizontal;
+    return impl_->horizontal_;
 }
 
 void Door::setHorizontal(bool horizontal) {
-    _impl->_horizontal = horizontal;
+    impl_->horizontal_ = horizontal;
 }
 
 bool Door::open() const {
-    return _impl->_open;
+    return impl_->open_;
 }
 
 void Door::setOpen(bool open) {
-    _impl->_open = open;
+    impl_->open_ = open;
 }
 
-Door::DoorImpl::DoorImpl() {
-    _open = false;
-    _horizontal = false;
+Door::DoorImpl::DoorImpl() :horizontal_{false}, open_{false} {
 }
